@@ -1,7 +1,8 @@
 {
   "functions": {
     "api/data.js": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "node_modules/@melaodoidao/datagov-mcp-server/**"
     }
   }
 }
