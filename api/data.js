@@ -17,6 +17,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from "node:path";
+import fs from "node:fs";
 
 // Restrict this to your real GitHub Pages origin once you know it,
 // e.g. "https://yourusername.github.io" — "*" is fine while testing.
@@ -48,8 +49,16 @@ export default async function handler(req, res) {
     "index.js"
   );
 
+  if (!fs.existsSync(serverEntry)) {
+    res.status(500).json({
+      error: "MCP server file missing from the deployment bundle",
+      detail: `Expected to find ${serverEntry}. Vercel's file tracer likely excluded node_modules/@melaodoidao/datagov-mcp-server because it's only referenced dynamically. Check the includeFiles setting in vercel.json.`,
+    });
+    return;
+  }
+
   const transport = new StdioClientTransport({
-    command: "node",
+    command: process.execPath, // the exact node binary running this function — not relying on PATH
     args: [serverEntry],
   });
 
