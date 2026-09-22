@@ -1,0 +1,11 @@
+{
+  "name": "glover-park-mcp-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Vercel serverless function that bridges a static site to the datagov-mcp-server MCP server.",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "@melaodoidao/datagov-mcp-server": "^0.1.0"
+  }
+}
