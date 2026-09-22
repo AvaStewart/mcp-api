@@ -16,8 +16,15 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import path from "node:path";
 import fs from "node:fs";
+import { createRequire } from "node:module";
+
+// require.resolve() with a literal string is what Vercel's bundler
+// (Node File Trace) actually scans for to decide which node_modules
+// files to include in the deployed function. A path built at runtime
+// with path.join() is invisible to it — that's why the file was
+// missing from the bundle before.
+const require = createRequire(import.meta.url);
 
 // Restrict this to your real GitHub Pages origin once you know it,
 // e.g. "https://yourusername.github.io" — "*" is fine while testing.
@@ -37,22 +44,24 @@ export default async function handler(req, res) {
     (Array.isArray(req.query.q) ? req.query.q[0] : req.query.q) ||
     "glover park washington dc";
 
-  // The MCP server ships as a dependency in node_modules; we run its
-  // build output directly with `node`, so nothing needs to be
-  // installed globally on Vercel.
-  const serverEntry = path.join(
-    process.cwd(),
-    "node_modules",
-    "@melaodoidao",
-    "datagov-mcp-server",
-    "build",
-    "index.js"
-  );
+  // The MCP server ships as a dependency in node_modules; require.resolve
+  // both gets us the correct absolute path AND is what makes Vercel's
+  // bundler include the file in the deployment in the first place.
+  let serverEntry;
+  try {
+    serverEntry = require.resolve("@melaodoidao/datagov-mcp-server/build/index.js");
+  } catch (err) {
+    res.status(500).json({
+      error: "MCP server package not found",
+      detail: String(err?.message || err),
+    });
+    return;
+  }
 
   if (!fs.existsSync(serverEntry)) {
     res.status(500).json({
       error: "MCP server file missing from the deployment bundle",
-      detail: `Expected to find ${serverEntry}. Vercel's file tracer likely excluded node_modules/@melaodoidao/datagov-mcp-server because it's only referenced dynamically. Check the includeFiles setting in vercel.json.`,
+      detail: `require.resolve() found ${serverEntry} but the file isn't actually there at runtime — this would be unusual. Try a clean redeploy.`,
     });
     return;
   }
